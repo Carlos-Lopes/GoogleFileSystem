@@ -1,0 +1,185 @@
+<div class="container">
+    <div id="inicio">
+        <h2>Google File System</h2>
+        <p class="text-justify">
+            Todos sabemos que a Google é uma das maiores empresas de tecnologia do mundo, atuando em áreas que variam
+            desde o desenvolvimento de carros autônomos, até soluções de cloud computing.<br>
+            Dentre essas soluções, as de maior destaque são os sistemas baseados em computação distribuída que fornecem
+            aos usuários a infraestrutura necessária para acessar, criar e alterar dados em tempo real. A exemplo disso
+            é possível citar o Google Drive, Docs e Cloud Platform, YouTube, Google Maps, dentre outros.
+        </p>
+        <p class="text-justify">
+            Para permitir que as suas aplicações consigam utilizar todos os recursos necessários, a Google desenvolveu o
+            Google File System (GFS), um sistema que consiste de computação distribuída para organizar e manipular uma
+            massiva quantidade de dados, com base em um projeto anterior chamado “BigFiles”, criado por Larry Page e
+            Sergey Brin.
+        </p>
+    </div>
+    <hr>
+    <div>
+        <h4>Introdução</h4>
+        <p class="text-justify">
+            Acreditamos que devido à enorme quantidade de dados que a Google trabalha são utilizados computadores e
+            servidores de ponta para que o funcionamento ocorra sem problemas. No entanto, os servidores do Google
+            são na verdade várias máquinas de baixo custo utilizando sistemas operacionais Linux, com um intenso
+            monitoramento, fazendo com que a tolerância a falhas e recuperação automática de dados sejam elementos
+            essenciais, dessa maneira o software compense o Hardware, alguns de seus sistemas que utilizar esse recurso
+            são o Youtube, Gmail, Maps, etc.
+        </p>
+        <div class="row">
+            <div class="col-md-4">
+                <img src="assets/GoogleFileSystemGFS.svg" class="img-fluid img-thumbnail">
+            </div>
+            <div class="col">
+                <p class="text-justify">
+                    Se analisar uma máquina comum de sistema de arquivos ela é dividida em duas camadas principais, uma
+                    camada superior que mantém os metadados e uma camada inferior (disco) para armazenar os dados em
+                    "blocos".<br>
+                    O Google File System no entanto apresenta um mestre que mantém os metadados e uma camada inferior
+                    que consiste no conjunto de chunkservers, (servidores especializados em retornar fragmentos da
+                    informação) que armazena os dados em unidades denominados "chunks", ou seja, é armazenado somente um
+                    fragmento da informação total.
+                    <br>
+                    Alguns dos clusters possuem mais de 1000 nós de armazenamento, 300 TB de diskstorage, e são
+                    acessados ​​por centenas de clientes em máquinas distintas.
+                </p>
+            </div>
+        </div>
+        <p class="text-justify">
+            Para possibilitar essa anexação os arquivos são divididos em fragmentos de 64 MB cada um, possuindo um
+            identificador único de 64 bits, e então são armazenados nos sistemas locais como arquivos Linux. Cada
+            fragmento é replicado pelo menos uma vez em outro servidor, por padrão são armazenadas três cópias de cada
+            fragmento. Os fragmentos não são armazenados em memória cache, assim é possivel se beneficiar do buffer
+            gerenciado pelo próprio Linux que mantém os arquivos acessados com freqüência na memória.
+        </p>
+    </div>
+    <hr>
+    <div id="interface">
+        <h4>Interface</h4>
+        <p class="text-justify">
+            O Google File System fornece uma interface familiar do sistema de arquivos, os arquivos são organizados
+            hierarquicamente em diretórios e identificados por nomes de caminho, oferece suporte as funções create,
+            delete, open, close, read e write, também possui a fução snapshot e append.
+            <br>
+            A função snapshot cria uma cópia de um arquivo ou uma árvore de diretórios a baixo custo, enquanto a função
+            append permite que vários clientes agreguem dados em um mesmo arquivo ao mesmo tempo, garantindo a
+            atomicidade do anexo de cada cliente individual.
+        </p>
+    </div>
+    <hr>
+    <div id="arquitetura">
+        <h4>Arquitetura</h4>
+        <div class="row">
+            <div class="col">
+                <p class="text-justify">
+                    O cluster do Google File System consiste em mestre e múltiplos chunckservers (servidores
+                    especializados em retornar fragmentos da informação) acessados por vários clientes, cada chunkserver
+                    é normalmente uma máquina Linux executando um processo no nivel de usuario. É possivel que uma
+                    maquina funcione tanto como cliente como chunkserver.
+                </p>
+                <p class="text-justify">
+                    Os arquivos armazenados são divididos em tamanho fixo, identificados por um pedaço de 64 bits
+                    imutável e globalmente exclusivo atribuído pelo mestre no momento da fragmentação.
+                </p>
+            </div>
+            <div class="col-md-6">
+                <img src="assets/gfs_architecture.png" class="img-fluid img-thumbnail">
+            </div>
+        </div>
+        <p class="text-justify">
+            Cada pedaço é replicado em múltiplos chunkserver, por padrão são armazenadas três cópias, porém é possivel
+            designar diferentes níveis de replicação para diferentes regiões do namespace do arquivo,enquanto isso o
+            mestre é responsavel por manter todos os metadados dos arquivos, ou seja, seus namespaces, informações de
+            controle de acesso, mapeamento dos pedaços de cada arquivo e a localização atual de cada
+            pedaço.
+            <br>
+            O mestre também é responsavel por controlar as atividades de todo o sistema, como coleta de lixo de pedaços
+            órfãos e a migração de pedaços entre os chunkservers, além de periodicamente se comunicar com cada
+            chunkserver em HeartBeat, mensagens utilizadas para dar instruções e coletar seu estado.
+        </p>
+        <p class="text-justify">
+            Máquinas clientes interagem diretamente com o mestre para operações de metadados, mas toda a comunicação de
+            dados é feita diretamente com o chunkserver, fazendo com que nem o cliente nem o chunkserver armazenam dados
+            de arquivo em cache.
+            <br>
+            Chunkservers não necessitam de cache de arquivos porque os pedação são armazenados como arquivos locais
+            então o cache de buffer do sistemas Linux já são frequentemente acessados.
+        </p>
+    </div>
+    <hr>
+    <div id="comunicao">
+        <h4>Comunicação</h4>
+        <p class="text-justify">
+            Com o uso de tamanho fixo dos arquivos, o cliente faz a tradução do nome do arquivo e o deslocamento em
+            bytes especificados pela aplicação em um "chunkindex" (responsavel por referencias os pedaços dentro
+            do arquivo) então enviados para o mestre que responde com a localização do arquivo solicitado e todas as
+            suas réplicas.
+            <br>
+            O cliente então armazena essa informação usando os nomes de arquivos e os chunkindex como chaves, assim as
+            requisições são enviados para um dos chunkservers, normalmente o mais proximo, caso seja necessário acessar
+            mais pedações não é necessário mais a interação com o mestre a não ser que a informação em cache expire ou o
+            arquivo seja fechado.
+        </p>
+    </div>
+    <div>
+        <div class="row">
+            <div class="col-md-6">
+                <h5>Leitura</h5>
+                <p>
+                    A aplicação informa o nome e o byte range do arquivo para o Cliente GFS, em seguida o Cliente
+                    GFS
+                    traduz
+                    o pedido da aplicação para o nome do arquivo (filename) e seu chunkindex.
+                </p>
+                <img src="assets/read.png" class="img-fluid img-thumbail text-center"
+                     style="height: 190px; padding-left: 80px">
+                <p>
+                    O mestre então responde para o Cliente GFS informando a localização das réplicas do arquivo
+                    então o
+                    Cliente GFS comunica-se com os Chunk Servers.
+                    <br>
+                    Os Chunkservers então respondem com o dado do arquivo e então o Cliente GFS manda para aplicação
+                    o
+                    dado solicitado.
+                </p>
+                <img src="assets/read_1.png" class="img-fluid img-thumbail" style="height: 190px; padding-left: 50px">
+            </div>
+            <div class="col">
+                <h5>Gravação</h5>
+                <p>
+                    A Aplicação faz um pedido de escrita, assim o Cliente GFS traduz o pedido e enviar ao mestre, então
+                    o
+                    mestre responde com o a localizações das réplicas.
+                    <br>
+                    O cliente então envia os dados de escrita para todas as localizações e os dados são armazenados em
+                    buffers internos dos chunkservers.
+                </p>
+                <div class="row">
+                    <div class="col-md">
+                        <img src="assets/write.png" class="img-fluid img-thumbail">
+                    </div>
+                    <div class="col">
+                        <img src="assets/write_1.png" class="img-fluid img-thumbail">
+                    </div>
+                </div>
+                <p>
+                    O cliente então manda o comando de escrita a réplica primária, que determina a ordem em série das
+                    instâncias dos dados armazenados no buffer e escreve nesta ordem no chunk e então manda a ordem aos
+                    secundários, requisitando a escrita.
+                    <br>
+                    As secundárias respondem à primária e a primária responde ao cliente, no caso de falha da escrita em
+                    um dos chunkservers o cliente recebe uma notificação e tenta novamente.
+                </p>
+                <div class="row">
+                    <div class="col">
+                        <img src="assets/write_2.png" class="img-fluid img-thumbail">
+                    </div>
+                    <div class="col">
+                        <img src="assets/write_3.png" class="img-fluid img-thumbail">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+</div>
